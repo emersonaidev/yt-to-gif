@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Play, Pause, SkipBack, SkipForward } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
 import { formatTime } from '@/lib/youtube';
 
 interface YouTubePlayerComponentProps {
@@ -18,6 +18,10 @@ interface YouTubePlayerComponentProps {
   currentTime: number;
   videoDuration: number;
   onSeek?: (time: number) => void;
+  previewMode?: boolean;
+  previewStartTime?: number;
+  previewDuration?: number;
+  onExitPreview?: () => void;
 }
 
 export function YouTubePlayerComponent({
@@ -29,11 +33,17 @@ export function YouTubePlayerComponent({
   currentTime,
   videoDuration,
   onSeek,
+  previewMode = false,
+  previewStartTime = 0,
+  previewDuration = 5,
+  onExitPreview,
 }: YouTubePlayerComponentProps) {
   const playerRef = useRef<YouTubePlayer | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [loopCountdown, setLoopCountdown] = useState(previewDuration);
+  const [isMuted, setIsMuted] = useState(false);
 
   // Update current time every 100ms when playing
   useEffect(() => {
@@ -46,6 +56,46 @@ export function YouTubePlayerComponent({
 
     return () => clearInterval(interval);
   }, [onTimeUpdate]);
+
+  // GIF Preview Loop - Auto-repeat segment with countdown
+  useEffect(() => {
+    if (!playerRef.current || !previewMode) return;
+
+    const interval = setInterval(() => {
+      if (playerRef.current) {
+        const currentTime = playerRef.current.getCurrentTime();
+        const endTime = previewStartTime + previewDuration;
+
+        // Calculate countdown: time remaining in loop
+        const timeInLoop = currentTime - previewStartTime;
+        const remaining = previewDuration - timeInLoop;
+        setLoopCountdown(Math.max(0, Math.ceil(remaining)));
+
+        // Loop back to start when reaching end of preview segment
+        if (currentTime >= endTime || currentTime < previewStartTime) {
+          playerRef.current.seekTo(previewStartTime, true);
+          playerRef.current.playVideo();
+          setLoopCountdown(previewDuration);
+        }
+      }
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [previewMode, previewStartTime, previewDuration]);
+
+  // Start preview when entering preview mode
+  useEffect(() => {
+    if (playerRef.current && previewMode) {
+      // Only mute on first preview activation if not already muted by user
+      if (!isMuted) {
+        playerRef.current.mute();
+        setIsMuted(true);
+      }
+      playerRef.current.seekTo(previewStartTime, true);
+      playerRef.current.playVideo();
+      setIsPlaying(true);
+    }
+  }, [previewMode, previewStartTime]);
 
   const opts: YouTubeProps['opts'] = {
     height: '360',
@@ -111,6 +161,8 @@ export function YouTubePlayerComponent({
     if (isPlaying) {
       playerRef.current.pauseVideo();
     } else {
+      // In preview mode, play continues the loop
+      // In normal mode, play from current position
       playerRef.current.playVideo();
     }
   };
@@ -140,6 +192,18 @@ export function YouTubePlayerComponent({
     if (onSeek) onSeek(time);
   };
 
+  const handleToggleMute = () => {
+    if (!playerRef.current) return;
+
+    if (isMuted) {
+      playerRef.current.unMute();
+      setIsMuted(false);
+    } else {
+      playerRef.current.mute();
+      setIsMuted(true);
+    }
+  };
+
   if (error) {
     return (
       <Card className="p-6">
@@ -151,9 +215,9 @@ export function YouTubePlayerComponent({
   }
 
   return (
-    <div className="overflow-hidden rounded-lg">
+    <div className="overflow-hidden">
       {isLoading && (
-        <div className="flex items-center justify-center h-[360px] bg-zinc-900 rounded-lg">
+        <div className="flex items-center justify-center h-[360px] bg-zinc-900">
           <div className="text-center">
             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-purple-500 border-r-transparent"></div>
             <p className="mt-2 text-sm text-gray-400">
@@ -171,15 +235,54 @@ export function YouTubePlayerComponent({
           onReady={handleReady}
           onStateChange={handleStateChange}
           onError={handleError}
-          className="aspect-video w-full rounded-t-lg overflow-hidden bg-black"
+          className="aspect-video w-full overflow-hidden bg-black"
           iframeClassName="w-full h-full"
         />
       </div>
 
       {/* Custom Controls with Slider */}
       {!isLoading && !error && (
-        <div className="bg-zinc-900 border-t border-zinc-800 px-6 py-4 rounded-b-lg space-y-4">
-          {/* Playback Controls */}
+        <div className="bg-zinc-900 border-t border-zinc-800 px-6 py-4 space-y-4">
+          {/* Preview Mode Indicator - Always visible when in preview */}
+          <div className="flex items-center justify-center gap-3 pb-2">
+            {previewMode && (
+              <div className="flex items-center gap-2 px-3 py-1 bg-pink-500/10 border border-pink-500/30 rounded-full">
+                <div className="h-2 w-2 bg-pink-500 rounded-full animate-pulse"></div>
+                <span className="text-sm text-pink-400 font-bold font-mono tabular-nums">
+                  GIF {loopCountdown}s
+                </span>
+              </div>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleToggleMute}
+              className="h-8 w-8 text-gray-400 hover:text-white"
+              title={isMuted ? "Unmute" : "Mute"}
+            >
+              {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+            </Button>
+          </div>
+
+          {/* Timeline Slider - Above Controls */}
+          <div className="space-y-3">
+            <Slider
+              value={[currentTime]}
+              onValueChange={handleSliderChange}
+              max={videoDuration}
+              step={0.1}
+              className="w-full"
+            />
+            <div className="flex justify-center">
+              <div className="bg-zinc-800/50 px-6 py-2 rounded-lg">
+                <span className="text-4xl font-mono font-bold text-purple-400 tabular-nums tracking-wider">
+                  {formatTime(currentTime)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Playback Controls - Below Slider */}
           <div className="flex items-center justify-center gap-2">
             <Button
               variant="outline"
@@ -218,22 +321,6 @@ export function YouTubePlayerComponent({
             >
               <SkipForward className="h-4 w-4" />
             </Button>
-          </div>
-
-          {/* Timeline Slider */}
-          <div className="space-y-2">
-            <Slider
-              value={[currentTime]}
-              onValueChange={handleSliderChange}
-              max={videoDuration}
-              step={0.1}
-              className="w-full"
-            />
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-gray-500">0:00</span>
-              <span className="text-2xl font-mono font-bold text-purple-400">{formatTime(currentTime)}</span>
-              <span className="text-xs text-gray-500">{formatTime(videoDuration)}</span>
-            </div>
           </div>
         </div>
       )}

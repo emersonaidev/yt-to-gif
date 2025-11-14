@@ -10,7 +10,7 @@ import { Slider } from '@/components/ui/slider';
 import { YouTubePlayerComponent } from '@/components/youtube-player';
 import { GifPreview } from '@/components/gif-preview';
 import { validateYouTubeUrl, formatTime } from '@/lib/youtube';
-import { Film, AlertCircle, Sparkles, Clock, Timer } from 'lucide-react';
+import { Film, AlertCircle, Sparkles, Timer } from 'lucide-react';
 
 export default function Home() {
   // URL state
@@ -27,6 +27,7 @@ export default function Home() {
   // GIF parameters
   const [startTime, setStartTime] = useState(0);
   const [duration, setDuration] = useState(5);
+  const [showLivePreview, setShowLivePreview] = useState(false);
 
   // Generation state
   const [isGenerating, setIsGenerating] = useState(false);
@@ -66,6 +67,7 @@ export default function Home() {
 
   const handleTimeChange = (time: number) => {
     setStartTime(time); // Auto-set start time when seeking
+    setShowLivePreview(true); // Show preview when slider is released
     if (playerRef.current) {
       playerRef.current.seekTo(time, true);
     }
@@ -127,14 +129,11 @@ export default function Home() {
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <Film className="h-10 w-10 text-purple-500" />
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent">
-              YouTube to GIF
-            </h1>
-          </div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent mb-3">
+            YouTube to GIF
+          </h1>
           <p className="text-gray-400 text-sm">
-            Transform moments into cinematic GIFs
+            Created by EMERSON FERREIRA
           </p>
         </div>
 
@@ -171,109 +170,124 @@ export default function Home() {
         {/* Main Content */}
         {videoId && (
           <div className="space-y-6">
-            {/* Video Player with integrated controls */}
+            {/* Video Player + GIF Controls - Integrated Console */}
             <div className="max-w-3xl mx-auto">
-              <YouTubePlayerComponent
-                videoId={videoId}
-                onReady={handlePlayerReady}
-                onPause={handlePlayerPause}
-                onTimeUpdate={(time) => {
-                  setCurrentTime(time);
-                }}
-                onPlayStateChange={(playing) => {
-                  setIsPaused(!playing);
-                }}
-                currentTime={currentTime}
-                videoDuration={videoDuration}
-                onSeek={handleTimeChange}
-              />
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg overflow-hidden">
+                {/* Video Player */}
+                <YouTubePlayerComponent
+                  videoId={videoId}
+                  onReady={handlePlayerReady}
+                  onPause={handlePlayerPause}
+                  onTimeUpdate={(time) => {
+                    setCurrentTime(time);
+                  }}
+                  onPlayStateChange={(playing) => {
+                    setIsPaused(!playing);
+                  }}
+                  currentTime={currentTime}
+                  videoDuration={videoDuration}
+                  onSeek={handleTimeChange}
+                  previewMode={showLivePreview}
+                  previewStartTime={startTime}
+                  previewDuration={duration}
+                  onExitPreview={() => setShowLivePreview(false)}
+                />
+
+                {/* GIF Settings - Integrated in Console */}
+                <div className="border-t border-zinc-800 p-6 space-y-5">
+                  {/* Duration */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm text-gray-300 flex items-center gap-2">
+                        <Timer className="h-4 w-4" />
+                        GIF Duration
+                      </Label>
+                      <span className="text-xl font-mono font-bold text-pink-400">
+                        {duration}s
+                      </span>
+                    </div>
+                    <Slider
+                      value={[duration]}
+                      onValueChange={(value) => {
+                        setDuration(Math.min(value[0], actualMaxDuration));
+                        setShowLivePreview(true);
+                      }}
+                      max={Math.floor(actualMaxDuration)}
+                      min={1}
+                      step={1}
+                      className="w-full"
+                    />
+                    <div className="grid grid-cols-4 gap-2">
+                      {presets.map((preset) => (
+                        <Button
+                          key={preset}
+                          variant={duration === preset ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => {
+                            setDuration(Math.min(preset, actualMaxDuration));
+                            setShowLivePreview(true);
+                          }}
+                          disabled={preset > actualMaxDuration}
+                          className={duration === preset ? 'bg-pink-600 hover:bg-pink-700' : 'bg-zinc-800 hover:bg-zinc-700 border-zinc-700'}
+                        >
+                          {preset}s
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Generate Button */}
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={handleGenerateGif}
+                      disabled={isGenerating}
+                      size="lg"
+                      className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-lg h-12"
+                    >
+                      {isGenerating ? (
+                        <>
+                          <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></div>
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="mr-2 h-5 w-5" />
+                          Generate GIF
+                        </>
+                      )}
+                    </Button>
+                    <Button onClick={handleReset} variant="outline" size="lg" className="bg-zinc-800 hover:bg-zinc-700 border-zinc-700">
+                      Reset
+                    </Button>
+                  </div>
+
+                  {/* Error Display */}
+                  {generationError && (
+                    <Alert variant="destructive" className="bg-red-950/50 border-red-900">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{generationError}</AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+              </div>
             </div>
 
-            {/* GIF Settings - Compact */}
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6 space-y-6">
-              {/* Duration */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm text-gray-300 flex items-center gap-2">
-                    <Timer className="h-4 w-4" />
-                    Duration
-                  </Label>
-                  <span className="text-lg font-mono font-bold text-pink-400">
-                    {duration}s
-                  </span>
-                </div>
-                <div className="grid grid-cols-4 gap-2 mb-3">
-                  {presets.map((preset) => (
-                    <Button
-                      key={preset}
-                      variant={duration === preset ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setDuration(Math.min(preset, actualMaxDuration))}
-                      disabled={preset > actualMaxDuration}
-                      className={duration === preset ? 'bg-pink-600 hover:bg-pink-700' : 'bg-zinc-800 hover:bg-zinc-700 border-zinc-700'}
-                    >
-                      {preset}s
-                    </Button>
-                  ))}
-                </div>
-                <Slider
-                  value={[duration]}
-                  onValueChange={(value) => setDuration(Math.min(value[0], actualMaxDuration))}
-                  max={Math.floor(actualMaxDuration)}
-                  min={1}
-                  step={1}
-                  className="w-full"
+            {/* GIF Preview - Separated Below */}
+            {(isGenerating || generatedGif) && (
+              <div className="max-w-3xl mx-auto">
+                <GifPreview
+                  gifUrl={generatedGif?.url || ''}
+                  fileSize={generatedGif?.fileSize || 0}
+                  isGenerating={isGenerating}
                 />
               </div>
-
-              {/* Generate Button */}
-              <div className="flex gap-3 pt-2">
-                <Button
-                  onClick={handleGenerateGif}
-                  disabled={isGenerating}
-                  size="lg"
-                  className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-lg h-12"
-                >
-                  {isGenerating ? (
-                    <>
-                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></div>
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="mr-2 h-5 w-5" />
-                      Generate GIF
-                    </>
-                  )}
-                </Button>
-                <Button onClick={handleReset} variant="outline" size="lg" className="bg-zinc-800 hover:bg-zinc-700 border-zinc-700">
-                  Reset
-                </Button>
-              </div>
-            </div>
-
-            {/* Error Display */}
-            {generationError && (
-              <Alert variant="destructive" className="bg-red-950/50 border-red-900">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{generationError}</AlertDescription>
-              </Alert>
-            )}
-
-            {/* GIF Preview */}
-            {(isGenerating || generatedGif) && (
-              <GifPreview
-                gifUrl={generatedGif?.url || ''}
-                fileSize={generatedGif?.fileSize || 0}
-                isGenerating={isGenerating}
-              />
             )}
           </div>
         )}
 
         {/* Footer */}
         <div className="mt-12 text-center text-xs text-gray-600">
-          <p>Powered by ffmpeg, yt-dlp, and gifski</p>
+          <p>Powered by EMERSON FERREIRA</p>
         </div>
       </div>
     </div>
