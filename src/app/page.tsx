@@ -286,8 +286,13 @@ export default function Home() {
         )}
 
         {/* Footer */}
-        <div className="mt-12 text-center text-xs text-gray-600">
-          <p>Powered by EMERSON FERREIRA</p>
+        <div className="mt-12 text-center space-y-2">
+          <p className="text-xs text-gray-500">
+            For personal and educational use only. You are solely responsible for respecting copyright laws and YouTube's Terms of Service.
+          </p>
+          <p className="text-xs text-gray-600">
+            Powered by EMERSON FERREIRA
+          </p>
         </div>
       </div>
     </div>
