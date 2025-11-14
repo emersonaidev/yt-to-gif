@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.github
+.vscode
+.claude
+temp
+public/gifs/*.gif
+*.log
+npm-debug.log*
+.DS_Store
+.env*
+README.md
+DISCLAIMER.md
