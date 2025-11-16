@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Slider } from '@/components/ui/slider';
 import { YouTubePlayerComponent } from '@/components/youtube-player';
 import { GifPreview } from '@/components/gif-preview';
-import { validateYouTubeUrl, formatTime } from '@/lib/youtube';
+import { validateYouTubeUrl } from '@/lib/youtube';
 import { Film, AlertCircle, Sparkles, Timer } from 'lucide-react';
 
 export default function Home() {
@@ -62,12 +62,12 @@ export default function Home() {
   const handlePlayerPause = (time: number) => {
     setIsPaused(true);
     setCurrentTime(time);
-    setStartTime(time); // Auto-set start time when pausing
+    setStartTime(time);
   };
 
   const handleTimeChange = (time: number) => {
-    setStartTime(time); // Auto-set start time when seeking
-    setShowLivePreview(true); // Show preview when slider is released
+    setStartTime(time);
+    setShowLivePreview(true);
     if (playerRef.current) {
       playerRef.current.seekTo(time, true);
     }
@@ -119,6 +119,7 @@ export default function Home() {
     setGenerationError(null);
     setStartTime(0);
     setDuration(5);
+    setShowLivePreview(false);
   };
 
   const actualMaxDuration = Math.min(30, videoDuration - startTime);
@@ -137,153 +138,180 @@ export default function Home() {
           </p>
         </div>
 
-        {/* URL Input */}
-        {!videoId && (
-          <div className="mb-8 bg-zinc-900/50 border border-zinc-800 rounded-lg p-6">
-            <form onSubmit={handleUrlSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="youtube-url" className="text-sm text-gray-300">YouTube URL</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="youtube-url"
-                    type="text"
-                    placeholder="https://www.youtube.com/watch?v=..."
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    className="flex-1 bg-zinc-950 border-zinc-700 text-white"
-                  />
-                  <Button type="submit" size="lg" className="bg-purple-600 hover:bg-purple-700">
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Load
-                  </Button>
+        {/* Single Console - Always Same Structure */}
+        <div className="max-w-3xl mx-auto space-y-6">
+          <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg overflow-hidden">
+
+            {/* Video Area - URL Input or Video Player */}
+            {!videoId ? (
+              <>
+                <div className="aspect-video w-full bg-gradient-to-br from-zinc-900 to-zinc-950 flex items-center justify-center">
+                  <div className="w-full max-w-2xl px-8">
+                    <form onSubmit={handleUrlSubmit} className="space-y-4">
+                      <div className="text-center mb-6">
+                        <Film className="h-16 w-16 text-purple-500/30 mx-auto mb-4" />
+                        <p className="text-gray-400 text-sm">Paste a YouTube URL to get started</p>
+                      </div>
+                      <div className="space-y-3">
+                        <div className="flex gap-2">
+                          <Input
+                            id="youtube-url"
+                            type="text"
+                            placeholder="https://www.youtube.com/watch?v=..."
+                            value={url}
+                            onChange={(e) => setUrl(e.target.value)}
+                            className="flex-1 bg-zinc-950 border-zinc-700 text-white placeholder:text-gray-600 h-12 text-base"
+                            autoFocus
+                          />
+                          <Button type="submit" size="lg" className="bg-purple-600 hover:bg-purple-700 h-12 px-8">
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            Load
+                          </Button>
+                        </div>
+                        {urlError && (
+                          <Alert variant="destructive" className="bg-red-950/50 border-red-900">
+                            <AlertDescription className="text-xs">{urlError}</AlertDescription>
+                          </Alert>
+                        )}
+                      </div>
+                    </form>
+                  </div>
                 </div>
-                {urlError && (
-                  <Alert variant="destructive" className="bg-red-950/50 border-red-900">
-                    <AlertDescription className="text-xs">{urlError}</AlertDescription>
-                  </Alert>
-                )}
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* Main Content */}
-        {videoId && (
-          <div className="space-y-6">
-            {/* Video Player + GIF Controls - Integrated Console */}
-            <div className="max-w-3xl mx-auto">
-              <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg overflow-hidden">
-                {/* Video Player */}
-                <YouTubePlayerComponent
-                  videoId={videoId}
-                  onReady={handlePlayerReady}
-                  onPause={handlePlayerPause}
-                  onTimeUpdate={(time) => {
-                    setCurrentTime(time);
-                  }}
-                  onPlayStateChange={(playing) => {
-                    setIsPaused(!playing);
-                  }}
-                  currentTime={currentTime}
-                  videoDuration={videoDuration}
-                  onSeek={handleTimeChange}
-                  previewMode={showLivePreview}
-                  previewStartTime={startTime}
-                  previewDuration={duration}
-                  onExitPreview={() => setShowLivePreview(false)}
-                />
-
-                {/* GIF Settings - Integrated in Console */}
-                <div className="border-t border-zinc-800 p-6 space-y-5">
-                  {/* Duration */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm text-gray-300 flex items-center gap-2">
-                        <Timer className="h-4 w-4" />
-                        GIF Duration
-                      </Label>
-                      <span className="text-xl font-mono font-bold text-pink-400">
-                        {duration}s
+                {/* Placeholder Controls - Disabled */}
+                <div className="bg-zinc-900 border-t border-zinc-800 px-6 py-4 space-y-4 opacity-30 pointer-events-none">
+                  <div className="flex items-center justify-center gap-3 pb-2">
+                    <div className="flex items-center gap-2 px-3 py-1 bg-pink-500/10 border border-pink-500/30 rounded-full">
+                      <div className="h-2 w-2 bg-pink-500 rounded-full"></div>
+                      <span className="text-sm text-pink-400 font-bold font-mono tabular-nums">
+                        GIF 5s
                       </span>
                     </div>
-                    <Slider
-                      value={[duration]}
-                      onValueChange={(value) => {
-                        setDuration(Math.min(value[0], actualMaxDuration));
-                        setShowLivePreview(true);
-                      }}
-                      max={Math.floor(actualMaxDuration)}
-                      min={1}
-                      step={1}
-                      className="w-full"
-                    />
-                    <div className="grid grid-cols-4 gap-2">
-                      {presets.map((preset) => (
-                        <Button
-                          key={preset}
-                          variant={duration === preset ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => {
-                            setDuration(Math.min(preset, actualMaxDuration));
-                            setShowLivePreview(true);
-                          }}
-                          disabled={preset > actualMaxDuration}
-                          className={duration === preset ? 'bg-pink-600 hover:bg-pink-700' : 'bg-zinc-800 hover:bg-zinc-700 border-zinc-700'}
-                        >
-                          {preset}s
-                        </Button>
-                      ))}
+                    <Button variant="ghost" size="icon" disabled className="h-8 w-8 text-gray-400">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.536a5 5 0 001.414 1.414m2.828-9.9a9 9 0 012.828 2.828" />
+                      </svg>
+                    </Button>
+                  </div>
+
+                  {/* GIF Duration Buttons */}
+                  <div className="grid grid-cols-4 gap-2">
+                    <Button variant="outline" size="sm" disabled className="bg-zinc-800 border-zinc-700">3s</Button>
+                    <Button variant="default" size="sm" disabled className="bg-pink-600">5s</Button>
+                    <Button variant="outline" size="sm" disabled className="bg-zinc-800 border-zinc-700">10s</Button>
+                    <Button variant="outline" size="sm" disabled className="bg-zinc-800 border-zinc-700">15s</Button>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Slider value={[0]} max={100} disabled className="w-full" />
+                    <div className="flex justify-center">
+                      <div className="bg-zinc-800/50 px-6 py-2 rounded-lg">
+                        <span className="text-4xl font-mono font-bold text-purple-400 tabular-nums tracking-wider">
+                          00:00
+                        </span>
+                      </div>
                     </div>
                   </div>
-
-                  {/* Generate Button */}
-                  <div className="flex gap-3">
-                    <Button
-                      onClick={handleGenerateGif}
-                      disabled={isGenerating}
-                      size="lg"
-                      className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-lg h-12"
-                    >
-                      {isGenerating ? (
-                        <>
-                          <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></div>
-                          Generating...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="mr-2 h-5 w-5" />
-                          Generate GIF
-                        </>
-                      )}
+                  <div className="flex items-center justify-center gap-2">
+                    <Button variant="outline" size="icon" disabled className="bg-zinc-800 border-zinc-700">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                      </svg>
                     </Button>
-                    <Button onClick={handleReset} variant="outline" size="lg" className="bg-zinc-800 hover:bg-zinc-700 border-zinc-700">
-                      Reset
+                    <Button size="lg" disabled className="w-28 bg-purple-600">
+                      <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Play
+                    </Button>
+                    <Button variant="outline" size="icon" disabled className="bg-zinc-800 border-zinc-700">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                      </svg>
                     </Button>
                   </div>
-
-                  {/* Error Display */}
-                  {generationError && (
-                    <Alert variant="destructive" className="bg-red-950/50 border-red-900">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>{generationError}</AlertDescription>
-                    </Alert>
-                  )}
                 </div>
-              </div>
-            </div>
-
-            {/* GIF Preview - Separated Below */}
-            {(isGenerating || generatedGif) && (
-              <div className="max-w-3xl mx-auto">
-                <GifPreview
-                  gifUrl={generatedGif?.url || ''}
-                  fileSize={generatedGif?.fileSize || 0}
-                  isGenerating={isGenerating}
-                />
-              </div>
+              </>
+            ) : (
+              <YouTubePlayerComponent
+                videoId={videoId}
+                onReady={handlePlayerReady}
+                onPause={handlePlayerPause}
+                onTimeUpdate={(time) => {
+                  setCurrentTime(time);
+                }}
+                onPlayStateChange={(playing) => {
+                  setIsPaused(!playing);
+                }}
+                currentTime={currentTime}
+                videoDuration={videoDuration}
+                onSeek={handleTimeChange}
+                previewMode={showLivePreview}
+                previewStartTime={startTime}
+                previewDuration={duration}
+                onExitPreview={() => setShowLivePreview(false)}
+                duration={duration}
+                onDurationChange={(newDuration) => {
+                  setDuration(newDuration);
+                  setShowLivePreview(true);
+                }}
+              />
             )}
+
+            {/* GIF Controls - Only Generate Button */}
+            <div className="border-t border-zinc-800 p-6">
+              {/* Generate Button */}
+              <div className="flex gap-3">
+                {!generatedGif ? (
+                  <Button
+                    onClick={handleGenerateGif}
+                    disabled={isGenerating || !videoId}
+                    size="lg"
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-lg h-12 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></div>
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="mr-2 h-5 w-5" />
+                        {videoId ? 'Generate GIF' : 'Load a video first'}
+                      </>
+                    )}
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleReset}
+                    size="lg"
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-lg h-12"
+                  >
+                    <Sparkles className="mr-2 h-5 w-5" />
+                    Create Another GIF
+                  </Button>
+                )}
+              </div>
+
+              {/* Error Display */}
+              {generationError && (
+                <Alert variant="destructive" className="bg-red-950/50 border-red-900">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{generationError}</AlertDescription>
+                </Alert>
+              )}
+            </div>
           </div>
-        )}
+
+          {/* GIF Preview - Separated Below */}
+          {(isGenerating || generatedGif) && videoId && (
+            <GifPreview
+              gifUrl={generatedGif?.url || ''}
+              fileSize={generatedGif?.fileSize || 0}
+              isGenerating={isGenerating}
+            />
+          )}
+        </div>
 
         {/* Footer */}
         <div className="mt-12 text-center space-y-2">

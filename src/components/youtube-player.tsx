@@ -22,6 +22,8 @@ interface YouTubePlayerComponentProps {
   previewStartTime?: number;
   previewDuration?: number;
   onExitPreview?: () => void;
+  onDurationChange?: (duration: number) => void;
+  duration?: number;
 }
 
 export function YouTubePlayerComponent({
@@ -37,6 +39,8 @@ export function YouTubePlayerComponent({
   previewStartTime = 0,
   previewDuration = 5,
   onExitPreview,
+  onDurationChange,
+  duration = 5,
 }: YouTubePlayerComponentProps) {
   const playerRef = useRef<YouTubePlayer | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -243,44 +247,61 @@ export function YouTubePlayerComponent({
       {/* Custom Controls with Slider */}
       {!isLoading && !error && (
         <div className="bg-zinc-900 border-t border-zinc-800 px-6 py-4 space-y-4">
-          {/* Preview Mode Indicator - Always visible when in preview */}
-          <div className="flex items-center justify-center gap-3 pb-2">
-            {previewMode && (
-              <div className="flex items-center gap-2 px-3 py-1 bg-pink-500/10 border border-pink-500/30 rounded-full">
-                <div className="h-2 w-2 bg-pink-500 rounded-full animate-pulse"></div>
-                <span className="text-sm text-pink-400 font-bold font-mono tabular-nums">
-                  GIF {loopCountdown}s
-                </span>
-              </div>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleToggleMute}
-              className="h-8 w-8 text-gray-400 hover:text-white"
-              title={isMuted ? "Unmute" : "Mute"}
-            >
-              {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-            </Button>
-          </div>
-
-          {/* Timeline Slider - Above Controls */}
-          <div className="space-y-3">
-            <Slider
-              value={[currentTime]}
-              onValueChange={handleSliderChange}
-              max={videoDuration}
-              step={0.1}
-              className="w-full"
-            />
-            <div className="flex justify-center">
-              <div className="bg-zinc-800/50 px-6 py-2 rounded-lg">
-                <span className="text-4xl font-mono font-bold text-purple-400 tabular-nums tracking-wider">
-                  {formatTime(currentTime)}
-                </span>
-              </div>
+          {/* Top Row: Timer (left) | GIF countdown + Sound (right) */}
+          <div className="flex items-center justify-between">
+            <div className="bg-zinc-800/50 px-6 py-2 rounded-lg">
+              <span className="text-3xl font-mono font-bold text-purple-400 tabular-nums tracking-wider">
+                {formatTime(currentTime)}
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              {previewMode && (
+                <div className="flex items-center gap-2 px-3 py-1 bg-pink-500/10 border border-pink-500/30 rounded-full">
+                  <div className="h-2 w-2 bg-pink-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm text-pink-400 font-bold font-mono tabular-nums">
+                    GIF {loopCountdown}s
+                  </span>
+                </div>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleToggleMute}
+                className="h-8 w-8 text-gray-400 hover:text-white"
+                title={isMuted ? "Unmute" : "Mute"}
+              >
+                {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+              </Button>
             </div>
           </div>
+
+          {/* GIF Duration Presets */}
+          <div className="grid grid-cols-4 gap-2">
+            {[3, 5, 10, 15].map((preset) => (
+              <Button
+                key={preset}
+                variant={duration === preset ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => {
+                  if (onDurationChange) {
+                    onDurationChange(preset);
+                  }
+                }}
+                className={duration === preset ? 'bg-pink-600 hover:bg-pink-700' : 'bg-zinc-800 hover:bg-zinc-700 border-zinc-700'}
+              >
+                {preset}s
+              </Button>
+            ))}
+          </div>
+
+          {/* Timeline Slider */}
+          <Slider
+            value={[currentTime]}
+            onValueChange={handleSliderChange}
+            max={videoDuration}
+            step={0.1}
+            className="w-full"
+          />
 
           {/* Playback Controls - Below Slider */}
           <div className="flex items-center justify-center gap-2">
