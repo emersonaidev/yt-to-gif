@@ -160,6 +160,47 @@ export async function generateGif(
 }
 
 /**
+ * Generate GIF from uploaded video file
+ */
+export async function generateGifFromFile(
+  videoPath: string,
+  startTime: number,
+  duration: number
+): Promise<{
+  gifPath: string;
+  gifBuffer: Buffer;
+  fileSize: number;
+}> {
+  const outputDir = path.join(process.cwd(), 'public', 'gifs');
+
+  // Ensure output directory exists
+  await fs.mkdir(outputDir, { recursive: true });
+
+  try {
+    // Generate unique filename for GIF
+    const timestamp = Date.now();
+    const videoBasename = path.basename(videoPath, path.extname(videoPath));
+    const gifFilename = `upload_${videoBasename}_${startTime}_${duration}_${timestamp}.gif`;
+    const gifPath = path.join(outputDir, gifFilename);
+
+    // Convert to GIF with optimization
+    await optimizeWithGifski(videoPath, gifPath, startTime, duration);
+
+    // Read GIF file
+    const gifBuffer = await fs.readFile(gifPath);
+    const stats = await fs.stat(gifPath);
+
+    return {
+      gifPath: `/gifs/${gifFilename}`,
+      gifBuffer,
+      fileSize: stats.size,
+    };
+  } catch (error) {
+    throw new Error(`GIF generation from file failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
  * Clean up old temporary files
  */
 export async function cleanupTempFiles(maxAgeHours: number = 24): Promise<void> {
