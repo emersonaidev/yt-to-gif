@@ -163,10 +163,13 @@ export function YouTubePlayerComponent({
     if (!playerRef.current) return;
 
     if (isPlaying) {
+      // Pause and stop (reset to start in preview mode)
       playerRef.current.pauseVideo();
+      if (previewMode && previewStartTime !== undefined) {
+        playerRef.current.seekTo(previewStartTime, true);
+      }
     } else {
-      // In preview mode, play continues the loop
-      // In normal mode, play from current position
+      // Play from current position
       playerRef.current.playVideo();
     }
   };
