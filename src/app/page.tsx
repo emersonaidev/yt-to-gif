@@ -307,12 +307,6 @@ export default function Home() {
                     previewMode={showLivePreview}
                     previewStartTime={startTime}
                     previewDuration={duration}
-                    onReset={handleReset}
-                    isGenerating={isGenerating}
-                    startTime={startTime}
-                    duration={duration}
-                    onStartTimeChange={setStartTime}
-                    onDurationChange={setDuration}
                   />
                 ) : (
                   // Video player for uploaded file
