@@ -305,7 +305,7 @@ export default function Home() {
                     videoDuration={videoDuration}
                     onSeek={handleTimeChange}
                     previewMode={showLivePreview}
-                    previewStart={startTime}
+                    previewStartTime={startTime}
                     previewDuration={duration}
                     onReset={handleReset}
                     isGenerating={isGenerating}
