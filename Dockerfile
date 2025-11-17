@@ -30,7 +30,7 @@ RUN apk add --no-cache \
     py3-pip \
     cargo \
     rust \
-    && pip3 install --no-cache-dir yt-dlp \
+    && pip3 install --break-system-packages --no-cache-dir yt-dlp \
     && cargo install gifski \
     && cp /root/.cargo/bin/gifski /usr/local/bin/
 
