@@ -412,7 +412,6 @@ export default function Home() {
             <GifPreview
               gifUrl={generatedGif.url}
               fileSize={generatedGif.fileSize}
-              onReset={handleReset}
             />
           )}
         </div>
