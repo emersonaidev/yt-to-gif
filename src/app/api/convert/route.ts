@@ -162,10 +162,27 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Conversion error:', error);
 
+    // Check if it's a YouTube bot detection error
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    const isYouTubeBlocked = errorMessage.includes('Sign in to confirm') ||
+                             errorMessage.includes('bot') ||
+                             errorMessage.includes('ERROR: [youtube]');
+
+    if (isYouTubeBlocked) {
+      return NextResponse.json(
+        {
+          error: 'YouTube blocked the request',
+          message: 'YouTube is blocking downloads from this server. Please use the "Upload Video" option instead. You can download the video locally and then upload it.',
+          suggestion: 'Use the Upload Video option for reliable GIF generation',
+        },
+        { status: 503 }
+      );
+    }
+
     return NextResponse.json(
       {
         error: 'GIF generation failed',
-        message: error instanceof Error ? error.message : 'Unknown error occurred',
+        message: errorMessage,
       },
       { status: 500 }
     );

@@ -154,7 +154,9 @@ export default function Home() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to generate GIF');
+        // Use the message from the server if available, otherwise the error
+        const errorMsg = data.message || data.error || 'Failed to generate GIF';
+        throw new Error(errorMsg);
       }
 
       setGeneratedGif({
