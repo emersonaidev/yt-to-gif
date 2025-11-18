@@ -343,39 +343,12 @@ export default function Home() {
           {/* Control Panel - Only show when video is loaded */}
           {hasVideo && (
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6 space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label>Start Time: {startTime.toFixed(1)}s</Label>
-                  <Label>Duration: {duration}s</Label>
-                </div>
-                <Slider
-                  value={[startTime]}
-                  max={videoDuration}
-                  step={0.1}
-                  onValueChange={([value]) => handleTimeChange(value)}
-                  className="w-full"
-                />
-                <div className="grid grid-cols-4 gap-2">
-                  {presets.map((preset) => (
-                    <Button
-                      key={preset}
-                      variant={duration === preset ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setDuration(preset)}
-                      disabled={preset > actualMaxDuration}
-                      className={duration === preset ? 'bg-pink-600' : 'bg-zinc-800 border-zinc-700'}
-                    >
-                      {preset}s
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
               <div className="flex gap-3">
                 <Button
                   onClick={handleGenerateGif}
                   disabled={isGenerating || (!videoId && !uploadedFile)}
                   className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                  size="lg"
                 >
                   {isGenerating ? (
                     <>
@@ -393,6 +366,7 @@ export default function Home() {
                   onClick={handleReset}
                   variant="outline"
                   className="bg-zinc-800 border-zinc-700"
+                  size="lg"
                 >
                   Reset
                 </Button>
